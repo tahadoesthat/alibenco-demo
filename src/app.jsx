@@ -42,6 +42,7 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
   const [activeTab, setActiveTab] = useState('properties');
   const [features, setFeatures] = useState(['Infinity Pool', 'Smart Home System']);
   const [newFeature, setNewFeature] = useState('');
+  const [imagePreview, setImagePreview] = useState(null);
 
   // Form States for new listing
   const [newProp, setNewProp] = useState({
@@ -59,6 +60,17 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
     setFeatures(features.filter((_, i) => i !== index));
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handlePublish = () => {
     if (!newProp.title || !newProp.price) return alert("Title and Price are required.");
     const newListing = {
@@ -70,7 +82,7 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
       sqft: Number(newProp.sqft) || 0,
       type: newProp.type.toLowerCase(),
       status: newProp.status.includes('Sale') ? 'For Sale' : newProp.status,
-      image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&auto=format&fit=crop', // Temporary placeholder
+      image: imagePreview || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&auto=format&fit=crop', // Uses uploaded image or placeholder
       address: newProp.location,
       leads: 0,
       features: features,
@@ -80,6 +92,7 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
     setActiveTab('properties');
     setNewProp({ title: '', price: '', currency: 'AED', location: '', beds: '', baths: '', sqft: '', description: '', status: 'For Sale (Ready)', type: 'Villa', isExclusive: false });
     setFeatures(['Infinity Pool', 'Smart Home System']);
+    setImagePreview(null);
   };
 
   if (!isAuthenticated) {
@@ -305,11 +318,23 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
 
                 <div className="bg-[#111] p-6 rounded-xl border border-white/10 space-y-5">
                   <h3 className="text-lg font-bold border-b border-white/10 pb-4">Media Upload</h3>
-                  <div className="border-2 border-dashed border-white/20 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:border-white/50 transition cursor-pointer bg-[#0A0A0A]">
-                    <UploadCloud size={40} className="text-gray-400 mb-3" />
-                    <p className="text-sm font-medium mb-1">Drag & Drop Images</p>
-                    <p className="text-xs text-gray-500">High-res JPG/PNG up to 10MB</p>
-                  </div>
+                  <label className="border-2 border-dashed border-white/20 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:border-white/50 transition cursor-pointer bg-[#0A0A0A] relative overflow-hidden block min-h-[200px]">
+                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-80 hover:opacity-100 transition" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full">
+                        <UploadCloud size={40} className="text-gray-400 mb-3" />
+                        <p className="text-sm font-medium mb-1">Click to Upload Image</p>
+                        <p className="text-xs text-gray-500">High-res JPG/PNG up to 10MB</p>
+                      </div>
+                    )}
+                  </label>
+                  {imagePreview && (
+                    <button type="button" onClick={() => setImagePreview(null)} className="text-xs text-red-400 hover:text-red-300 w-full text-center mt-2 block">
+                      Remove Image
+                    </button>
+                  )}
                 </div>
 
                 <button type="submit" className="w-full bg-white text-black py-4 rounded font-bold tracking-widest uppercase hover:bg-gray-200 transition shadow-lg">
