@@ -123,7 +123,7 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
           
           <div className="pt-4 pb-2"><p className="text-xs text-gray-600 font-bold uppercase tracking-wider px-4">CRM & Agents</p></div>
           <button onClick={() => setActiveTab('inquiries')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'inquiries' ? 'bg-white text-black' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
-            <Inbox size={18} /> Inquiries <span className="ml-auto bg-white/20 text-white text-xs py-0.5 px-2 rounded-full">0</span>
+            <Inbox size={18} /> Inquiries <span className="ml-auto bg-white/20 text-white text-xs py-0.5 px-2 rounded-full">{inquiries.length}</span>
           </button>
           <button onClick={() => setActiveTab('agents')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'agents' ? 'bg-white text-black' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
             <Users size={18} /> Manage Agents
@@ -367,7 +367,7 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
                         <td className="p-4">
                           <p className="font-semibold text-sm">{lead.name}</p>
                           <p className="text-xs text-gray-400">{lead.email}</p>
-                          <p className="text-xs text-gray-400">{lead.phone}</p>
+                          <p className="text-xs text-gray-400">{lead.phone || 'N/A'}</p>
                         </td>
                         <td className="p-4">
                           <p className="text-sm">Interested in viewing:</p>
@@ -455,39 +455,56 @@ const Navbar = ({ navigate, currentRoute }) => {
   );
 };
 
-const Footer = ({ navigate }) => (
-  <footer id="contact" className="bg-[#0A0A0A] py-24 px-6 md:px-12 border-t border-white/10">
-    <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-      <div className="border border-white/50 p-6 md:p-8">
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" placeholder="YOUR NAME" className="w-full bg-transparent border border-white/50 p-3 text-sm placeholder-gray-400 focus:outline-none focus:border-white transition" />
-            <input type="email" placeholder="EMAIL" className="w-full bg-transparent border border-white/50 p-3 text-sm placeholder-gray-400 focus:outline-none focus:border-white transition" />
+const Footer = ({ navigate, onSubmitInquiry }) => {
+  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email) return alert("Please fill out your name and email.");
+    onSubmitInquiry({
+      name: formData.name,
+      email: formData.email,
+      phone: 'N/A',
+      property: formData.subject || 'General Inquiry',
+      message: formData.message
+    });
+    setFormData({ name: '', email: '', subject: '', message: '' });
+  };
+
+  return (
+    <footer id="contact" className="bg-[#0A0A0A] py-24 px-6 md:px-12 border-t border-white/10">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+        <div className="border border-white/50 p-6 md:p-8">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input type="text" placeholder="YOUR NAME" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-transparent border border-white/50 p-3 text-sm placeholder-gray-400 focus:outline-none focus:border-white transition" />
+              <input type="email" placeholder="EMAIL" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full bg-transparent border border-white/50 p-3 text-sm placeholder-gray-400 focus:outline-none focus:border-white transition" />
+            </div>
+            <input type="text" placeholder="SUBJECT" value={formData.subject} onChange={(e) => setFormData({...formData, subject: e.target.value})} className="w-full bg-transparent border border-white/50 p-3 text-sm placeholder-gray-400 focus:outline-none focus:border-white transition" />
+            <textarea rows="6" placeholder="YOUR MESSAGE" value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} className="w-full bg-transparent border border-white/50 p-3 text-sm placeholder-gray-400 focus:outline-none focus:border-white transition resize-none"></textarea>
+            
+            <div className="text-center md:text-left mt-6">
+              <button type="submit" className="border border-white hover:bg-white hover:text-black transition-all duration-300 px-12 py-3 text-sm font-semibold tracking-widest uppercase">
+                SEND
+              </button>
+            </div>
+          </form>
+        </div>
+        <div className="text-center flex flex-col items-center justify-center">
+          <h2 className="text-7xl md:text-8xl font-bold tracking-widest mb-6 uppercase">LOGO.</h2>
+          <div className="text-xl space-y-2 text-gray-300">
+            <p>Beverly Hills, CA</p>
+            <p>contact@alibenco.com</p>
+            <p>+1 (555) 123-4567</p>
           </div>
-          <input type="text" placeholder="SUBJECT" className="w-full bg-transparent border border-white/50 p-3 text-sm placeholder-gray-400 focus:outline-none focus:border-white transition" />
-          <textarea rows="6" placeholder="YOUR MESSAGE" className="w-full bg-transparent border border-white/50 p-3 text-sm placeholder-gray-400 focus:outline-none focus:border-white transition resize-none"></textarea>
-          
-          <div className="text-center md:text-left mt-6">
-            <button type="submit" className="border border-white hover:bg-white hover:text-black transition-all duration-300 px-12 py-3 text-sm font-semibold tracking-widest uppercase">
-              SEND
-            </button>
-          </div>
-        </form>
-      </div>
-      <div className="text-center flex flex-col items-center justify-center">
-        <h2 className="text-7xl md:text-8xl font-bold tracking-widest mb-6 uppercase">LOGO.</h2>
-        <div className="text-xl space-y-2 text-gray-300">
-          <p>Beverly Hills, CA</p>
-          <p>contact@alibenco.com</p>
-          <p>+1 (555) 123-4567</p>
         </div>
       </div>
-    </div>
-    <div className="mt-16 text-center text-xs text-gray-700">
-      <span onClick={() => navigate('admin')} className="cursor-pointer hover:text-gray-400 transition">&copy; 2024 Ali Ben Co. All rights reserved.</span>
-    </div>
-  </footer>
-);
+      <div className="mt-16 text-center text-xs text-gray-700">
+        <span onClick={() => navigate('admin')} className="cursor-pointer hover:text-gray-400 transition">&copy; 2024 Ali Ben Co. All rights reserved.</span>
+      </div>
+    </footer>
+  );
+};
 
 const PropertyCard = ({ property, navigate }) => {
   return (
@@ -722,7 +739,22 @@ const Listings = ({ navigate, properties }) => {
   );
 };
 
-const PropertyDetail = ({ property, navigate, properties }) => {
+const PropertyDetail = ({ property, navigate, properties, onSubmitInquiry }) => {
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email) return alert("Please fill out your name and email.");
+    onSubmitInquiry({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone || 'N/A',
+      property: property.title,
+      message: formData.message
+    });
+    setFormData({ name: '', email: '', phone: '', message: '' });
+  };
+
   const scrollSlider = (direction) => {
     const slider = document.getElementById('slider-container');
     const cardWidth = 350; // approximate width
@@ -810,10 +842,11 @@ const PropertyDetail = ({ property, navigate, properties }) => {
             <div className="sticky top-10 bg-[#111] border border-white/20 rounded-3xl p-8 shadow-2xl">
               <h4 className="text-xl font-bold mb-2">Schedule a Viewing</h4>
               <p className="text-xs text-gray-400 mb-8">Contact our exclusive agents to arrange a private tour.</p>
-              <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
-                <input type="text" placeholder="Full Name" className="w-full bg-transparent border border-white/30 p-3 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:border-white transition" />
-                <input type="email" placeholder="Email Address" className="w-full bg-transparent border border-white/30 p-3 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:border-white transition" />
-                <textarea rows="4" placeholder="I am interested in..." className="w-full bg-transparent border border-white/30 p-3 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:border-white transition resize-none"></textarea>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <input type="text" required placeholder="Full Name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-transparent border border-white/30 p-3 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:border-white transition" />
+                <input type="email" required placeholder="Email Address" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full bg-transparent border border-white/30 p-3 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:border-white transition" />
+                <input type="tel" placeholder="Phone Number" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full bg-transparent border border-white/30 p-3 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:border-white transition" />
+                <textarea rows="4" placeholder="I am interested in..." value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} className="w-full bg-transparent border border-white/30 p-3 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:border-white transition resize-none"></textarea>
                 <button type="submit" className="w-full bg-white text-black hover:bg-gray-200 transition py-4 rounded-lg text-sm font-bold tracking-widest uppercase mt-4">
                   Request Details
                 </button>
@@ -861,13 +894,24 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleInquirySubmit = (inquiryData) => {
+    const newInquiry = {
+      id: Date.now(),
+      status: 'New',
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      ...inquiryData
+    };
+    setInquiries([newInquiry, ...inquiries]);
+    alert('Your inquiry has been sent successfully! Our agents will contact you soon.');
+  };
+
   return (
     <div className="bg-[#0A0A0A] text-white min-h-screen font-sans selection:bg-white selection:text-black">
       {currentRoute === 'home' && <Home navigate={navigate} properties={properties} />}
       {currentRoute === 'listings' && <Listings navigate={navigate} properties={properties} />}
-      {currentRoute === 'property' && <PropertyDetail navigate={navigate} property={selectedProperty} properties={properties} />}
+      {currentRoute === 'property' && <PropertyDetail navigate={navigate} property={selectedProperty} properties={properties} onSubmitInquiry={handleInquirySubmit} />}
       {currentRoute === 'admin' && <AdminDashboard navigate={navigate} properties={properties} setProperties={setProperties} inquiries={inquiries} />}
-      {currentRoute !== 'admin' && <Footer navigate={navigate} />}
+      {currentRoute !== 'admin' && <Footer navigate={navigate} onSubmitInquiry={handleInquirySubmit} />}
     </div>
   );
 }
