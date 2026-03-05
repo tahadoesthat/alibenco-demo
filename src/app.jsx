@@ -7,95 +7,7 @@ import {
   Inbox, Settings, LogOut, UploadCloud, Edit, Trash2, XCircle
 } from 'lucide-react';
 
-// --- MOCK DATABASE ---
-const propertiesData = [
-  {
-    id: 1,
-    title: 'Modern Villa Beverly Hills',
-    price: 8500000,
-    beds: 5,
-    baths: 6,
-    sqft: 7500,
-    type: 'villa',
-    status: 'For Sale',
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&auto=format&fit=crop',
-    address: '1234 Trousdale Estates, Beverly Hills, CA 90210'
-  },
-  {
-    id: 2,
-    title: 'Contemporary Estate',
-    price: 12250000,
-    beds: 7,
-    baths: 8,
-    sqft: 10200,
-    type: 'mansion',
-    status: 'For Sale',
-    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=800&auto=format&fit=crop',
-    address: '888 Bel Air Rd, Los Angeles, CA 90077'
-  },
-  {
-    id: 3,
-    title: 'The Skyline Penthouse',
-    price: 4100000,
-    beds: 3,
-    baths: 4,
-    sqft: 3100,
-    type: 'apartment',
-    status: 'Off-Plan',
-    image: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?q=80&w=800&auto=format&fit=crop',
-    address: '1000 Downtown Ave, Penthouse 1, LA'
-  },
-  {
-    id: 4,
-    title: 'Lakeside Retreat',
-    price: 5750000,
-    beds: 4,
-    baths: 5,
-    sqft: 5800,
-    type: 'villa',
-    status: 'For Sale',
-    image: 'https://images.unsplash.com/photo-1628624747186-a941c476b7ef?q=80&w=800&auto=format&fit=crop',
-    address: '44 Lakeview Dr, Hidden Valley, CA'
-  },
-  {
-    id: 5,
-    title: 'Desert Oasis Mansion',
-    price: 14000000,
-    beds: 6,
-    baths: 8,
-    sqft: 12000,
-    type: 'mansion',
-    status: 'Off-Plan',
-    image: 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?q=80&w=800&auto=format&fit=crop',
-    address: '777 Palm Desert Way, Palm Springs, CA'
-  },
-  {
-    id: 6,
-    title: 'Minimalist Townhouse',
-    price: 2850000,
-    beds: 3,
-    baths: 3,
-    sqft: 2400,
-    type: 'apartment',
-    status: 'For Sale',
-    image: 'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?q=80&w=800&auto=format&fit=crop',
-    address: '12 Abbot Kinney Blvd, Venice, CA'
-  }
-];
-
 // --- ADMIN MOCK DATA & COMPONENTS ---
-const mockInquiries = [
-  { id: 1, name: 'Tariq Al-Fayed', email: 'tariq.al@example.com', phone: '+971 50 123 4567', property: 'Signature Villa Palm Jumeirah', status: 'New', date: 'Oct 24, 2023' },
-  { id: 2, name: 'Sarah Jenkins', email: 's.jenkins@invest.co', phone: '+44 7911 123456', property: 'Skyline Penthouse Marina', status: 'Contacted', date: 'Oct 23, 2023' },
-  { id: 3, name: 'Omar Saeed', email: 'omar99@gmail.com', phone: '+971 56 987 6543', property: 'Modern Mansion Emirates Hills', status: 'In Progress', date: 'Oct 22, 2023' },
-];
-
-const mockAdminProperties = [
-  { id: 1, title: 'Signature Villa Palm Jumeirah', price: 'AED 25,000,000', type: 'Villa', status: 'For Sale', leads: 4 },
-  { id: 2, title: 'Skyline Penthouse Marina', price: 'AED 12,500,000', type: 'Penthouse', status: 'Off-Plan', leads: 12 },
-  { id: 3, title: 'Modern Mansion Emirates Hills', price: 'AED 45,000,000', type: 'Mansion', status: 'For Sale', leads: 2 },
-];
-
 const LoginScreen = ({ onLogin, onBack }) => (
   <div className="min-h-screen bg-[#0A0A0A] text-white flex flex-col items-center justify-center p-6 font-sans">
     <div className="w-full max-w-md p-8 bg-[#111] border border-white/10 rounded-2xl shadow-2xl relative overflow-hidden">
@@ -125,11 +37,16 @@ const LoginScreen = ({ onLogin, onBack }) => (
   </div>
 );
 
-const AdminDashboard = ({ navigate }) => {
+const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('properties');
   const [features, setFeatures] = useState(['Infinity Pool', 'Smart Home System']);
   const [newFeature, setNewFeature] = useState('');
+
+  // Form States for new listing
+  const [newProp, setNewProp] = useState({
+    title: '', price: '', currency: 'AED', location: '', beds: '', baths: '', sqft: '', description: '', status: 'For Sale (Ready)', type: 'Villa', isExclusive: false
+  });
 
   const handleAddFeature = () => {
     if (newFeature.trim()) {
@@ -140,6 +57,29 @@ const AdminDashboard = ({ navigate }) => {
 
   const handleRemoveFeature = (index) => {
     setFeatures(features.filter((_, i) => i !== index));
+  };
+
+  const handlePublish = () => {
+    if (!newProp.title || !newProp.price) return alert("Title and Price are required.");
+    const newListing = {
+      id: Date.now(),
+      title: newProp.title,
+      price: Number(newProp.price),
+      beds: Number(newProp.beds) || 0,
+      baths: Number(newProp.baths) || 0,
+      sqft: Number(newProp.sqft) || 0,
+      type: newProp.type.toLowerCase(),
+      status: newProp.status.includes('Sale') ? 'For Sale' : newProp.status,
+      image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&auto=format&fit=crop', // Temporary placeholder
+      address: newProp.location,
+      leads: 0,
+      features: features,
+      description: newProp.description
+    };
+    setProperties([newListing, ...properties]);
+    setActiveTab('properties');
+    setNewProp({ title: '', price: '', currency: 'AED', location: '', beds: '', baths: '', sqft: '', description: '', status: 'For Sale (Ready)', type: 'Villa', isExclusive: false });
+    setFeatures(['Infinity Pool', 'Smart Home System']);
   };
 
   if (!isAuthenticated) {
@@ -170,7 +110,7 @@ const AdminDashboard = ({ navigate }) => {
           
           <div className="pt-4 pb-2"><p className="text-xs text-gray-600 font-bold uppercase tracking-wider px-4">CRM & Agents</p></div>
           <button onClick={() => setActiveTab('inquiries')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'inquiries' ? 'bg-white text-black' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
-            <Inbox size={18} /> Inquiries <span className="ml-auto bg-white/20 text-white text-xs py-0.5 px-2 rounded-full">3</span>
+            <Inbox size={18} /> Inquiries <span className="ml-auto bg-white/20 text-white text-xs py-0.5 px-2 rounded-full">0</span>
           </button>
           <button onClick={() => setActiveTab('agents')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'agents' ? 'bg-white text-black' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
             <Users size={18} /> Manage Agents
@@ -221,16 +161,19 @@ const AdminDashboard = ({ navigate }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {mockAdminProperties.map(prop => (
+                    {properties.length === 0 && (
+                      <tr><td colSpan="5" className="p-8 text-center text-gray-500">No properties uploaded yet. Click "+ Add Listing" to start.</td></tr>
+                    )}
+                    {properties.map(prop => (
                       <tr key={prop.id} className="border-b border-white/5 hover:bg-white/5 transition">
                         <td className="p-4 flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gray-800 rounded"></div>
+                          <img src={prop.image} alt="Property" className="w-12 h-12 bg-gray-800 rounded object-cover" />
                           <div>
                             <p className="font-semibold">{prop.title}</p>
-                            <p className="text-xs text-gray-500">{prop.type}</p>
+                            <p className="text-xs text-gray-500 capitalize">{prop.type}</p>
                           </div>
                         </td>
-                        <td className="p-4 font-medium">{prop.price}</td>
+                        <td className="p-4 font-medium">AED {prop.price.toLocaleString()}</td>
                         <td className="p-4">
                           <span className={`text-xs px-2 py-1 rounded uppercase tracking-wider ${prop.status === 'For Sale' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
                             {prop.status}
@@ -239,7 +182,7 @@ const AdminDashboard = ({ navigate }) => {
                         <td className="p-4 text-gray-300">{prop.leads} Inquiries</td>
                         <td className="p-4 text-right">
                           <button className="text-gray-400 hover:text-white p-2 transition"><Edit size={16} /></button>
-                          <button className="text-gray-400 hover:text-red-400 p-2 transition"><Trash2 size={16} /></button>
+                          <button onClick={() => setProperties(properties.filter(p => p.id !== prop.id))} className="text-gray-400 hover:text-red-400 p-2 transition"><Trash2 size={16} /></button>
                         </td>
                       </tr>
                     ))}
@@ -250,47 +193,47 @@ const AdminDashboard = ({ navigate }) => {
           )}
 
           {activeTab === 'add-property' && (
-            <form className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
+            <form className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12" onSubmit={(e) => { e.preventDefault(); handlePublish(); }}>
               <div className="lg:col-span-2 space-y-6">
                 <div className="bg-[#111] p-6 rounded-xl border border-white/10 space-y-5">
                   <h3 className="text-lg font-bold border-b border-white/10 pb-4">Basic Information</h3>
                   <div>
                     <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Property Title</label>
-                    <input type="text" placeholder="e.g. Signature Villa Palm Jumeirah" className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition" />
+                    <input type="text" value={newProp.title} onChange={(e) => setNewProp({...newProp, title: e.target.value})} placeholder="e.g. Signature Villa Palm Jumeirah" className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition" required />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Price</label>
                       <div className="flex bg-[#0A0A0A] border border-white/20 rounded focus-within:border-white transition overflow-hidden">
-                        <select className="bg-transparent text-sm p-3 border-r border-white/20 focus:outline-none text-gray-300">
+                        <select value={newProp.currency} onChange={(e) => setNewProp({...newProp, currency: e.target.value})} className="bg-transparent text-sm p-3 border-r border-white/20 focus:outline-none text-gray-300">
                           <option value="AED" className="bg-[#111]">AED</option>
                           <option value="USD" className="bg-[#111]">USD</option>
                         </select>
-                        <input type="number" placeholder="25,000,000" className="w-full bg-transparent p-3 text-sm focus:outline-none" />
+                        <input type="number" value={newProp.price} onChange={(e) => setNewProp({...newProp, price: e.target.value})} placeholder="25000000" className="w-full bg-transparent p-3 text-sm focus:outline-none" required />
                       </div>
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Location</label>
-                      <input type="text" placeholder="e.g. Frond M, Palm Jumeirah" className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition" />
+                      <input type="text" value={newProp.location} onChange={(e) => setNewProp({...newProp, location: e.target.value})} placeholder="e.g. Frond M, Palm Jumeirah" className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition" />
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Bedrooms</label>
-                      <input type="number" placeholder="5" className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition" />
+                      <input type="number" value={newProp.beds} onChange={(e) => setNewProp({...newProp, beds: e.target.value})} placeholder="5" className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition" />
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Bathrooms</label>
-                      <input type="number" placeholder="6" className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition" />
+                      <input type="number" value={newProp.baths} onChange={(e) => setNewProp({...newProp, baths: e.target.value})} placeholder="6" className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition" />
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Area (SqFt)</label>
-                      <input type="number" placeholder="7500" className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition" />
+                      <input type="number" value={newProp.sqft} onChange={(e) => setNewProp({...newProp, sqft: e.target.value})} placeholder="7500" className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition" />
                     </div>
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Description</label>
-                    <textarea rows="5" placeholder="Highlight the luxury aspects of the property..." className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition resize-none"></textarea>
+                    <textarea value={newProp.description} onChange={(e) => setNewProp({...newProp, description: e.target.value})} rows="5" placeholder="Highlight the luxury aspects of the property..." className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition resize-none"></textarea>
                   </div>
                 </div>
 
@@ -330,7 +273,7 @@ const AdminDashboard = ({ navigate }) => {
                   <h3 className="text-lg font-bold border-b border-white/10 pb-4">Status & Type</h3>
                   <div>
                     <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Property Status</label>
-                    <select className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition">
+                    <select value={newProp.status} onChange={(e) => setNewProp({...newProp, status: e.target.value})} className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition">
                       <option>For Sale (Ready)</option>
                       <option>Off-Plan</option>
                       <option>For Rent</option>
@@ -338,20 +281,23 @@ const AdminDashboard = ({ navigate }) => {
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Property Type</label>
-                    <select className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition">
+                    <select value={newProp.type} onChange={(e) => setNewProp({...newProp, type: e.target.value})} className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition">
                       <option>Villa</option>
                       <option>Penthouse</option>
                       <option>Apartment</option>
                       <option>Mansion</option>
                     </select>
                   </div>
+
                   <div className="pt-4 border-t border-white/10 mt-2">
                     <label className="flex items-center gap-3 cursor-pointer group">
                       <div className="relative">
-                        <input type="checkbox" className="sr-only peer" />
+                        <input type="checkbox" checked={newProp.isExclusive} onChange={(e) => setNewProp({...newProp, isExclusive: e.target.checked})} className="sr-only peer" />
                         <div className="w-11 h-6 bg-[#0A0A0A] border border-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-400 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-white peer-checked:after:bg-black"></div>
                       </div>
-                      <div><p className="text-sm font-bold text-white uppercase tracking-wider">Mark as Exclusive</p></div>
+                      <div>
+                        <p className="text-sm font-bold text-white uppercase tracking-wider">Mark as Exclusive</p>
+                      </div>
                     </label>
                     <p className="text-xs text-gray-500 mt-2">Exclusive properties will be pinned to the top of the frontend catalog.</p>
                   </div>
@@ -366,7 +312,7 @@ const AdminDashboard = ({ navigate }) => {
                   </div>
                 </div>
 
-                <button type="button" className="w-full bg-white text-black py-4 rounded font-bold tracking-widest uppercase hover:bg-gray-200 transition shadow-lg">
+                <button type="submit" className="w-full bg-white text-black py-4 rounded font-bold tracking-widest uppercase hover:bg-gray-200 transition shadow-lg">
                   Publish Listing
                 </button>
               </div>
@@ -388,7 +334,10 @@ const AdminDashboard = ({ navigate }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {mockInquiries.map(lead => (
+                    {inquiries.length === 0 && (
+                      <tr><td colSpan="5" className="p-8 text-center text-gray-500">No inquiries received yet.</td></tr>
+                    )}
+                    {inquiries.map(lead => (
                       <tr key={lead.id} className="border-b border-white/5 hover:bg-white/5 transition">
                         <td className="p-4">
                           <p className="font-semibold text-sm">{lead.name}</p>
@@ -474,7 +423,7 @@ const Navbar = ({ navigate, currentRoute }) => {
           <button onClick={() => { navigate('home'); setMobileMenuOpen(false); }} className="text-lg">Home</button>
           <button onClick={() => { navigate('listings'); setMobileMenuOpen(false); }} className="text-lg">Listings</button>
           <button onClick={() => { navigate('home'); setTimeout(() => document.getElementById('about')?.scrollIntoView({behavior: 'smooth'}), 100); setMobileMenuOpen(false); }} className="text-lg">About</button>
-          <button onClick={() => document.getElementById('contact')?.scrollIntoView({behavior: 'smooth'})} className="border border-white px-8 py-3 rounded-full text-sm">Get Quote</button>
+          <button onClick={() => { document.getElementById('contact')?.scrollIntoView({behavior: 'smooth'}); setMobileMenuOpen(false); }} className="border border-white px-8 py-3 rounded-full text-sm">Get Quote</button>
         </div>
       )}
     </nav>
@@ -547,7 +496,7 @@ const PropertyCard = ({ property, navigate }) => {
 
 // --- PAGES ---
 
-const Home = ({ navigate }) => {
+const Home = ({ navigate, properties }) => {
   return (
     <>
       <header className="relative w-full h-screen min-h-[600px] flex flex-col">
@@ -569,9 +518,13 @@ const Home = ({ navigate }) => {
       <section className="bg-[#2A2A2A] py-24 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-4xl md:text-5xl text-center mb-16 tracking-wide">Properties</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            {propertiesData.slice(0, 3).map(prop => <PropertyCard key={prop.id} property={prop} navigate={navigate} />)}
-          </div>
+          {properties.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+              {properties.slice(0, 3).map(prop => <PropertyCard key={prop.id} property={prop} navigate={navigate} />)}
+            </div>
+          ) : (
+            <p className="text-center text-gray-400 mb-16">No properties uploaded yet. Check back soon!</p>
+          )}
           <div className="text-center">
             <button onClick={() => navigate('listings')} className="border border-white hover:bg-white hover:text-black transition-all duration-300 px-10 py-3 text-sm font-semibold tracking-widest uppercase">
               View All Properties
@@ -637,19 +590,19 @@ const Home = ({ navigate }) => {
   );
 };
 
-const Listings = ({ navigate }) => {
+const Listings = ({ navigate, properties }) => {
   const [search, setSearch] = useState('');
   const [type, setType] = useState('');
   const [price, setPrice] = useState('');
   const [beds, setBeds] = useState('');
   
-  const [filteredProperties, setFilteredProperties] = useState(propertiesData);
+  const [filteredProperties, setFilteredProperties] = useState(properties);
 
   useEffect(() => {
-    let result = propertiesData;
+    let result = properties;
     
-    if (search) result = result.filter(p => p.title.toLowerCase().includes(search.toLowerCase()) || p.address.toLowerCase().includes(search.toLowerCase()));
-    if (type) result = result.filter(p => p.type === type);
+    if (search) result = result.filter(p => p.title.toLowerCase().includes(search.toLowerCase()) || (p.address && p.address.toLowerCase().includes(search.toLowerCase())));
+    if (type) result = result.filter(p => p.type.toLowerCase() === type.toLowerCase());
     if (price) {
       if (price === '1') result = result.filter(p => p.price < 5000000);
       if (price === '2') result = result.filter(p => p.price >= 5000000 && p.price <= 10000000);
@@ -662,7 +615,7 @@ const Listings = ({ navigate }) => {
     }
     
     setFilteredProperties(result);
-  }, [search, type, price, beds]);
+  }, [search, type, price, beds, properties]);
 
   return (
     <>
@@ -744,7 +697,7 @@ const Listings = ({ navigate }) => {
   );
 };
 
-const PropertyDetail = ({ property, navigate }) => {
+const PropertyDetail = ({ property, navigate, properties }) => {
   const scrollSlider = (direction) => {
     const slider = document.getElementById('slider-container');
     const cardWidth = 350; // approximate width
@@ -814,15 +767,14 @@ const PropertyDetail = ({ property, navigate }) => {
             <div>
               <h3 className="text-2xl font-bold mb-6">About this Property</h3>
               <div className="text-gray-300 leading-relaxed space-y-4 text-[15px]">
-                <p>Experience the pinnacle of luxury living in this architectural masterpiece. Designed with meticulous attention to detail, this incredible home offers sweeping panoramic views and ultimate privacy.</p>
-                <p>The open-concept floor plan seamlessly integrates indoor and outdoor living. Floor-to-ceiling automated glass doors slide away to reveal a spectacular zero-edge infinity pool, a sunken fire pit, and expansive entertainment decks.</p>
+                <p>{property.description || "Experience the pinnacle of luxury living in this architectural masterpiece. Designed with meticulous attention to detail, this incredible home offers sweeping panoramic views and ultimate privacy."}</p>
               </div>
             </div>
 
             <div>
               <h3 className="text-2xl font-bold mb-6">Features & Amenities</h3>
               <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-8 text-gray-300 text-sm">
-                {['Infinity Pool', 'Smart Home System', 'Home Theater', 'Wine Cellar', "Chef's Kitchen", 'Panoramic Views'].map((feat, i) => (
+                {(property.features && property.features.length > 0 ? property.features : ['Infinity Pool', 'Smart Home System', 'Home Theater', 'Wine Cellar', "Chef's Kitchen", 'Panoramic Views']).map((feat, i) => (
                   <li key={i} className="flex items-center gap-3"><CheckCircle size={18} className="text-white" /> {feat}</li>
                 ))}
               </ul>
@@ -855,13 +807,17 @@ const PropertyDetail = ({ property, navigate }) => {
               <button onClick={() => scrollSlider('next')} className="border border-white hover:bg-white hover:text-black transition-all w-12 h-12 rounded-full flex items-center justify-center"><ChevronRight size={20} /></button>
             </div>
           </div>
-          <div id="slider-container" className="flex overflow-x-auto snap-x snap-mandatory gap-6 md:grid md:grid-cols-3 md:gap-8 pb-8 md:pb-0 -mx-6 px-6 md:mx-0 md:px-0 scroll-smooth" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {propertiesData.filter(p => p.id !== property.id).slice(0, 3).map(prop => (
-               <div key={prop.id} className="min-w-[85vw] sm:min-w-[60vw] md:min-w-0 snap-center">
-                  <PropertyCard property={prop} navigate={navigate} />
-               </div>
-            ))}
-          </div>
+          {properties.filter(p => p.id !== property.id).length > 0 ? (
+            <div id="slider-container" className="flex overflow-x-auto snap-x snap-mandatory gap-6 md:grid md:grid-cols-3 md:gap-8 pb-8 md:pb-0 -mx-6 px-6 md:mx-0 md:px-0 scroll-smooth" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {properties.filter(p => p.id !== property.id).slice(0, 3).map(prop => (
+                 <div key={prop.id} className="min-w-[85vw] sm:min-w-[60vw] md:min-w-0 snap-center">
+                    <PropertyCard property={prop} navigate={navigate} />
+                 </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400">No other relevant properties at the moment.</p>
+          )}
         </div>
       </section>
     </>
@@ -871,6 +827,8 @@ const PropertyDetail = ({ property, navigate }) => {
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState('home');
   const [selectedProperty, setSelectedProperty] = useState(null);
+  const [properties, setProperties] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
 
   const navigate = (route, property = null) => {
     setCurrentRoute(route);
@@ -880,10 +838,10 @@ export default function App() {
 
   return (
     <div className="bg-[#0A0A0A] text-white min-h-screen font-sans selection:bg-white selection:text-black">
-      {currentRoute === 'home' && <Home navigate={navigate} />}
-      {currentRoute === 'listings' && <Listings navigate={navigate} />}
-      {currentRoute === 'property' && <PropertyDetail navigate={navigate} property={selectedProperty} />}
-      {currentRoute === 'admin' && <AdminDashboard navigate={navigate} />}
+      {currentRoute === 'home' && <Home navigate={navigate} properties={properties} />}
+      {currentRoute === 'listings' && <Listings navigate={navigate} properties={properties} />}
+      {currentRoute === 'property' && <PropertyDetail navigate={navigate} property={selectedProperty} properties={properties} />}
+      {currentRoute === 'admin' && <AdminDashboard navigate={navigate} properties={properties} setProperties={setProperties} inquiries={inquiries} />}
       {currentRoute !== 'admin' && <Footer navigate={navigate} />}
     </div>
   );
