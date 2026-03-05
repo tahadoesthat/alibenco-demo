@@ -37,16 +37,20 @@ const LoginScreen = ({ onLogin, onBack }) => (
   </div>
 );
 
-const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
+const AdminDashboard = ({ navigate, properties, setProperties, inquiries, setInquiries }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('properties');
   const [features, setFeatures] = useState(['Infinity Pool', 'Smart Home System']);
   const [newFeature, setNewFeature] = useState('');
   const [imagePreview, setImagePreview] = useState(null);
+  
+  // UI States
+  const [editingId, setEditingId] = useState(null);
+  const [selectedInquiry, setSelectedInquiry] = useState(null);
 
-  // Form States for new listing
+  // Form States for new/editing listing
   const [newProp, setNewProp] = useState({
-    title: '', price: '', currency: 'AED', location: '', beds: '', baths: '', sqft: '', description: '', status: 'For Sale (Ready)', type: 'Villa', isExclusive: false
+    title: '', price: '', currency: 'AED', location: '', beds: '', baths: '', sqft: '', description: '', status: 'For Sale', type: 'Villa', isExclusive: false
   });
 
   const handleAddFeature = () => {
@@ -71,26 +75,60 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
     }
   };
 
+  const handleEditProperty = (prop) => {
+    setEditingId(prop.id);
+    setNewProp({
+      title: prop.title,
+      price: prop.price,
+      currency: prop.currency || 'AED',
+      location: prop.address || '',
+      beds: prop.beds,
+      baths: prop.baths,
+      sqft: prop.sqft,
+      description: prop.description || '',
+      status: prop.status,
+      type: prop.type.charAt(0).toUpperCase() + prop.type.slice(1),
+      isExclusive: prop.isExclusive || false
+    });
+    setFeatures(prop.features || []);
+    setImagePreview(prop.image !== 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&auto=format&fit=crop' ? prop.image : null);
+    setActiveTab('add-property');
+  };
+
   const handlePublish = () => {
     if (!newProp.title || !newProp.price) return alert("Title and Price are required.");
-    const newListing = {
-      id: Date.now(),
+    
+    const propertyData = {
+      id: editingId || Date.now(),
       title: newProp.title,
       price: Number(newProp.price),
+      currency: newProp.currency,
       beds: Number(newProp.beds) || 0,
       baths: Number(newProp.baths) || 0,
       sqft: Number(newProp.sqft) || 0,
       type: newProp.type.toLowerCase(),
-      status: newProp.status.includes('Sale') ? 'For Sale' : newProp.status,
-      image: imagePreview || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&auto=format&fit=crop', // Uses uploaded image or placeholder
+      status: newProp.status,
+      isExclusive: newProp.isExclusive,
+      image: imagePreview || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&auto=format&fit=crop',
       address: newProp.location,
-      leads: 0,
+      leads: editingId ? properties.find(p => p.id === editingId)?.leads || 0 : 0,
       features: features,
       description: newProp.description
     };
-    setProperties([newListing, ...properties]);
+
+    if (editingId) {
+      setProperties(properties.map(p => p.id === editingId ? propertyData : p));
+    } else {
+      setProperties([propertyData, ...properties]);
+    }
+    
+    resetForm();
     setActiveTab('properties');
-    setNewProp({ title: '', price: '', currency: 'AED', location: '', beds: '', baths: '', sqft: '', description: '', status: 'For Sale (Ready)', type: 'Villa', isExclusive: false });
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setNewProp({ title: '', price: '', currency: 'AED', location: '', beds: '', baths: '', sqft: '', description: '', status: 'For Sale', type: 'Villa', isExclusive: false });
     setFeatures(['Infinity Pool', 'Smart Home System']);
     setImagePreview(null);
   };
@@ -100,9 +138,75 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
   }
 
   return (
-    <div className="flex h-screen bg-[#0A0A0A] text-white font-sans overflow-hidden">
+    <div className="flex h-screen bg-[#0A0A0A] text-white font-sans overflow-hidden relative">
+      
+      {/* Inquiry Details Modal */}
+      {selectedInquiry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#111] border border-white/20 rounded-xl p-8 max-w-lg w-full relative shadow-2xl">
+            <button onClick={() => setSelectedInquiry(null)} className="absolute top-6 right-6 text-gray-400 hover:text-white transition">
+              <X size={24} />
+            </button>
+            <h2 className="text-2xl font-bold mb-6 border-b border-white/10 pb-4">Inquiry Details</h2>
+            
+            <div className="space-y-5 text-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-gray-500 uppercase tracking-wider text-xs mb-1">Client Name</p>
+                  <p className="font-semibold text-lg">{selectedInquiry.name}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 uppercase tracking-wider text-xs mb-1">Date</p>
+                  <p>{selectedInquiry.date}</p>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-gray-500 uppercase tracking-wider text-xs mb-1">Contact Info</p>
+                <div className="flex flex-col gap-1">
+                  <a href={`mailto:${selectedInquiry.email}`} className="text-blue-400 hover:underline flex items-center gap-2"><Mail size={14}/> {selectedInquiry.email}</a>
+                  {selectedInquiry.phone && selectedInquiry.phone !== 'N/A' && (
+                    <a href={`tel:${selectedInquiry.phone}`} className="text-blue-400 hover:underline flex items-center gap-2"><Phone size={14}/> {selectedInquiry.phone}</a>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-gray-500 uppercase tracking-wider text-xs mb-1">Interested Property</p>
+                <p className="font-medium bg-white/5 p-2 rounded border border-white/10 inline-block">{selectedInquiry.property}</p>
+              </div>
+
+              <div>
+                <p className="text-gray-500 uppercase tracking-wider text-xs mb-1">Message</p>
+                <div className="bg-[#0A0A0A] p-4 rounded border border-white/10 text-gray-300 min-h-[100px] whitespace-pre-wrap">
+                  {selectedInquiry.message || "No additional message provided by the client."}
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-white/10">
+                <label className="text-gray-500 uppercase tracking-wider text-xs mb-2 block">Update Status</label>
+                <select
+                  value={selectedInquiry.status}
+                  onChange={(e) => {
+                    const newStatus = e.target.value;
+                    setInquiries(inquiries.map(i => i.id === selectedInquiry.id ? { ...i, status: newStatus } : i));
+                    setSelectedInquiry({...selectedInquiry, status: newStatus});
+                  }}
+                  className="bg-[#0A0A0A] border border-white/20 p-3 rounded focus:outline-none focus:border-white transition w-full"
+                >
+                  <option value="New">New</option>
+                  <option value="Contacted">Contacted</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Closed">Closed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* SIDEBAR */}
-      <aside className="w-64 bg-[#111] border-r border-white/10 flex flex-col">
+      <aside className="w-64 bg-[#111] border-r border-white/10 flex flex-col shrink-0">
         <div className="p-6 border-b border-white/10">
           <h2 className="text-2xl font-bold tracking-widest uppercase mb-1">LOGO.</h2>
           <p className="text-xs text-gray-400 tracking-wider">Admin Portal</p>
@@ -114,16 +218,21 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
           </button>
           
           <div className="pt-4 pb-2"><p className="text-xs text-gray-600 font-bold uppercase tracking-wider px-4">Listings</p></div>
-          <button onClick={() => setActiveTab('properties')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'properties' ? 'bg-white text-black' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
+          <button onClick={() => {setActiveTab('properties'); resetForm();}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'properties' ? 'bg-white text-black' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
             <Building size={18} /> Manage Properties
           </button>
-          <button onClick={() => setActiveTab('add-property')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'add-property' ? 'bg-white text-black' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
-            <PlusSquare size={18} /> Add New Listing
+          <button onClick={() => {setActiveTab('add-property'); if(!editingId) resetForm();}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'add-property' ? 'bg-white text-black' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
+            <PlusSquare size={18} /> {editingId ? 'Edit Listing' : 'Add New Listing'}
           </button>
           
           <div className="pt-4 pb-2"><p className="text-xs text-gray-600 font-bold uppercase tracking-wider px-4">CRM & Agents</p></div>
           <button onClick={() => setActiveTab('inquiries')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'inquiries' ? 'bg-white text-black' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
-            <Inbox size={18} /> Inquiries <span className="ml-auto bg-white/20 text-white text-xs py-0.5 px-2 rounded-full">{inquiries.length}</span>
+            <Inbox size={18} /> Inquiries 
+            {inquiries.filter(i => i.status === 'New').length > 0 && (
+              <span className="ml-auto bg-white text-black font-bold text-xs py-0.5 px-2 rounded-full">
+                {inquiries.filter(i => i.status === 'New').length}
+              </span>
+            )}
           </button>
           <button onClick={() => setActiveTab('agents')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'agents' ? 'bg-white text-black' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
             <Users size={18} /> Manage Agents
@@ -142,10 +251,12 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
 
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#0A0A0A]">
-        <header className="h-20 border-b border-white/10 flex items-center justify-between px-8 bg-[#0A0A0A]">
-          <h1 className="text-xl font-semibold capitalize tracking-wide">{activeTab.replace('-', ' ')}</h1>
+        <header className="h-20 border-b border-white/10 flex items-center justify-between px-8 bg-[#0A0A0A] shrink-0">
+          <h1 className="text-xl font-semibold capitalize tracking-wide">
+            {activeTab === 'add-property' && editingId ? 'Edit Listing' : activeTab.replace('-', ' ')}
+          </h1>
           <div className="flex items-center gap-4">
-            <div className="relative">
+            <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
               <input type="text" placeholder="Quick search..." className="bg-[#111] border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-white/30 transition w-64" />
             </div>
@@ -158,7 +269,7 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <p className="text-gray-400 text-sm">Manage your exclusive Dubai portfolio.</p>
-                <button onClick={() => setActiveTab('add-property')} className="bg-white text-black px-4 py-2 rounded text-sm font-bold tracking-widest uppercase hover:bg-gray-200 transition">
+                <button onClick={() => { resetForm(); setActiveTab('add-property'); }} className="bg-white text-black px-4 py-2 rounded text-sm font-bold tracking-widest uppercase hover:bg-gray-200 transition">
                   + Add Listing
                 </button>
               </div>
@@ -182,19 +293,22 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
                         <td className="p-4 flex items-center gap-3">
                           <img src={prop.image} alt="Property" className="w-12 h-12 bg-gray-800 rounded object-cover" />
                           <div>
-                            <p className="font-semibold">{prop.title}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold">{prop.title}</p>
+                              {prop.isExclusive && <Star size={12} className="text-yellow-500 fill-yellow-500" />}
+                            </div>
                             <p className="text-xs text-gray-500 capitalize">{prop.type}</p>
                           </div>
                         </td>
-                        <td className="p-4 font-medium">AED {prop.price.toLocaleString()}</td>
+                        <td className="p-4 font-medium">{prop.currency || 'AED'} {prop.price.toLocaleString()}</td>
                         <td className="p-4">
-                          <span className={`text-xs px-2 py-1 rounded uppercase tracking-wider ${prop.status === 'For Sale' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                          <span className={`text-xs px-2 py-1 rounded uppercase tracking-wider ${prop.status === 'For Sale' ? 'bg-green-500/20 text-green-400' : prop.status === 'For Rent' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
                             {prop.status}
                           </span>
                         </td>
-                        <td className="p-4 text-gray-300">{prop.leads} Inquiries</td>
+                        <td className="p-4 text-gray-300 font-bold">{prop.leads || 0}</td>
                         <td className="p-4 text-right">
-                          <button className="text-gray-400 hover:text-white p-2 transition"><Edit size={16} /></button>
+                          <button onClick={() => handleEditProperty(prop)} className="text-gray-400 hover:text-white p-2 transition"><Edit size={16} /></button>
                           <button onClick={() => setProperties(properties.filter(p => p.id !== prop.id))} className="text-gray-400 hover:text-red-400 p-2 transition"><Trash2 size={16} /></button>
                         </td>
                       </tr>
@@ -218,7 +332,7 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
                     <div>
                       <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Price</label>
                       <div className="flex bg-[#0A0A0A] border border-white/20 rounded focus-within:border-white transition overflow-hidden">
-                        <select value={newProp.currency} onChange={(e) => setNewProp({...newProp, currency: e.target.value})} className="bg-transparent text-sm p-3 border-r border-white/20 focus:outline-none text-gray-300">
+                        <select value={newProp.currency} onChange={(e) => setNewProp({...newProp, currency: e.target.value})} className="bg-transparent text-sm p-3 border-r border-white/20 focus:outline-none text-gray-300 outline-none">
                           <option value="AED" className="bg-[#111]">AED</option>
                           <option value="USD" className="bg-[#111]">USD</option>
                         </select>
@@ -257,8 +371,8 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
                       type="text" 
                       value={newFeature}
                       onChange={(e) => setNewFeature(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddFeature())}
-                      placeholder="e.g. Infinity Pool, Private Beach, Maid's Room..." 
+                      onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); handleAddFeature(); } }}
+                      placeholder="e.g. Infinity Pool, Private Beach..." 
                       className="flex-1 bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition" 
                     />
                     <button type="button" onClick={handleAddFeature} className="bg-white text-black px-6 rounded font-bold tracking-widest uppercase hover:bg-gray-200 transition text-sm">Add</button>
@@ -287,18 +401,18 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
                   <div>
                     <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Property Status</label>
                     <select value={newProp.status} onChange={(e) => setNewProp({...newProp, status: e.target.value})} className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition">
-                      <option>For Sale (Ready)</option>
-                      <option>Off-Plan</option>
-                      <option>For Rent</option>
+                      <option value="For Sale">For Sale</option>
+                      <option value="Off-Plan">Off-Plan</option>
+                      <option value="For Rent">For Rent</option>
                     </select>
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Property Type</label>
                     <select value={newProp.type} onChange={(e) => setNewProp({...newProp, type: e.target.value})} className="w-full bg-[#0A0A0A] border border-white/20 p-3 rounded text-sm focus:outline-none focus:border-white transition">
-                      <option>Villa</option>
-                      <option>Penthouse</option>
-                      <option>Apartment</option>
-                      <option>Mansion</option>
+                      <option value="Villa">Villa</option>
+                      <option value="Penthouse">Penthouse</option>
+                      <option value="Apartment">Apartment</option>
+                      <option value="Mansion">Mansion</option>
                     </select>
                   </div>
 
@@ -323,7 +437,7 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
                     {imagePreview ? (
                       <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-80 hover:opacity-100 transition" />
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-full">
+                      <div className="flex flex-col items-center justify-center h-full z-10 relative">
                         <UploadCloud size={40} className="text-gray-400 mb-3" />
                         <p className="text-sm font-medium mb-1">Click to Upload Image</p>
                         <p className="text-xs text-gray-500">High-res JPG/PNG up to 10MB</p>
@@ -338,8 +452,13 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
                 </div>
 
                 <button type="submit" className="w-full bg-white text-black py-4 rounded font-bold tracking-widest uppercase hover:bg-gray-200 transition shadow-lg">
-                  Publish Listing
+                  {editingId ? 'Save Changes' : 'Publish Listing'}
                 </button>
+                {editingId && (
+                  <button type="button" onClick={resetForm} className="w-full border border-white/30 text-white py-3 rounded font-bold tracking-widest uppercase hover:bg-white/10 transition shadow-lg mt-3 text-sm">
+                    Cancel Edit
+                  </button>
+                )}
               </div>
             </form>
           )}
@@ -367,24 +486,27 @@ const AdminDashboard = ({ navigate, properties, setProperties, inquiries }) => {
                         <td className="p-4">
                           <p className="font-semibold text-sm">{lead.name}</p>
                           <p className="text-xs text-gray-400">{lead.email}</p>
-                          <p className="text-xs text-gray-400">{lead.phone || 'N/A'}</p>
+                          {lead.phone && lead.phone !== 'N/A' && <p className="text-xs text-gray-400">{lead.phone}</p>}
                         </td>
                         <td className="p-4">
                           <p className="text-sm">Interested in viewing:</p>
-                          <p className="text-sm font-semibold text-gray-300">{lead.property}</p>
+                          <p className="text-sm font-semibold text-gray-300 max-w-[200px] truncate">{lead.property}</p>
                         </td>
                         <td className="p-4 text-sm text-gray-300">{lead.date}</td>
                         <td className="p-4">
                           <span className={`text-xs px-2 py-1 rounded uppercase tracking-wider ${
                             lead.status === 'New' ? 'bg-red-500/20 text-red-400' : 
                             lead.status === 'Contacted' ? 'bg-green-500/20 text-green-400' : 
+                            lead.status === 'Closed' ? 'bg-gray-500/20 text-gray-400' :
                             'bg-yellow-500/20 text-yellow-400'
                           }`}>
                             {lead.status}
                           </span>
                         </td>
                         <td className="p-4 text-right">
-                          <button className="text-xs border border-white/30 hover:border-white px-3 py-1 rounded transition">View Details</button>
+                          <button onClick={() => setSelectedInquiry(lead)} className="text-xs border border-white/30 hover:border-white hover:bg-white/10 px-3 py-2 rounded transition">
+                            View Details
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -516,12 +638,17 @@ const PropertyCard = ({ property, navigate }) => {
         <div className={`absolute top-4 left-4 z-10 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest ${property.status === 'For Sale' ? 'bg-white text-black' : 'bg-black border border-white text-white'}`}>
           {property.status}
         </div>
+        {property.isExclusive && (
+          <div className="absolute top-4 right-4 z-10 bg-black/80 backdrop-blur-md border border-yellow-500/50 text-yellow-500 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+            <Star size={12} className="fill-yellow-500" /> Exclusive
+          </div>
+        )}
         <img src={property.image} alt={property.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-700" />
       </div>
       <div className="p-8 pb-6 flex-grow flex flex-col justify-between">
         <div>
           <h3 className="text-2xl mb-2 truncate font-semibold">{property.title}</h3>
-          <p className="text-xl font-bold mb-3">${property.price.toLocaleString()}</p>
+          <p className="text-xl font-bold mb-3">{property.currency || 'AED'} {property.price.toLocaleString()}</p>
           <p className="text-sm text-gray-400 border-t border-white/10 pt-4 truncate">
             {property.beds} Beds • {property.baths} Baths • {property.sqft.toLocaleString()} sqft
           </p>
@@ -539,6 +666,9 @@ const PropertyCard = ({ property, navigate }) => {
 // --- PAGES ---
 
 const Home = ({ navigate, properties }) => {
+  // Show exclusive properties first, then newest
+  const sortedProperties = [...properties].sort((a, b) => (b.isExclusive === a.isExclusive) ? b.id - a.id : b.isExclusive ? 1 : -1);
+
   return (
     <>
       <header className="relative w-full h-screen min-h-[600px] flex flex-col">
@@ -560,9 +690,9 @@ const Home = ({ navigate, properties }) => {
       <section className="bg-[#2A2A2A] py-24 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-4xl md:text-5xl text-center mb-16 tracking-wide">Properties</h2>
-          {properties.length > 0 ? (
+          {sortedProperties.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-              {properties.slice(0, 3).map(prop => <PropertyCard key={prop.id} property={prop} navigate={navigate} />)}
+              {sortedProperties.slice(0, 3).map(prop => <PropertyCard key={prop.id} property={prop} navigate={navigate} />)}
             </div>
           ) : (
             <p className="text-center text-gray-400 mb-16">No properties uploaded yet. Check back soon!</p>
@@ -641,7 +771,7 @@ const Listings = ({ navigate, properties }) => {
   const [filteredProperties, setFilteredProperties] = useState(properties);
 
   useEffect(() => {
-    let result = properties;
+    let result = [...properties].sort((a, b) => (b.isExclusive === a.isExclusive) ? b.id - a.id : b.isExclusive ? 1 : -1);
     
     if (search) result = result.filter(p => p.title.toLowerCase().includes(search.toLowerCase()) || (p.address && p.address.toLowerCase().includes(search.toLowerCase())));
     if (type) result = result.filter(p => p.type.toLowerCase() === type.toLowerCase());
@@ -698,9 +828,9 @@ const Listings = ({ navigate, properties }) => {
               <label className="text-xs text-gray-400 uppercase tracking-wider">Price Range</label>
               <select value={price} onChange={(e) => setPrice(e.target.value)} className="w-full bg-transparent border border-white/50 p-3 text-sm focus:outline-none focus:border-white transition appearance-none">
                 <option value="" className="bg-[#2A2A2A]">Any Price</option>
-                <option value="1" className="bg-[#2A2A2A]">Under $5M</option>
-                <option value="2" className="bg-[#2A2A2A]">$5M - $10M</option>
-                <option value="3" className="bg-[#2A2A2A]">$10M+</option>
+                <option value="1" className="bg-[#2A2A2A]">Under 5M</option>
+                <option value="2" className="bg-[#2A2A2A]">5M - 10M</option>
+                <option value="3" className="bg-[#2A2A2A]">10M+</option>
               </select>
             </div>
             <div className="flex flex-col space-y-2">
@@ -730,7 +860,7 @@ const Listings = ({ navigate, properties }) => {
           ) : (
             <div className="text-center py-20 text-gray-400">
               <p className="text-2xl mb-4">No properties found matching your criteria.</p>
-              <button onClick={() => { setSearch(''); setType(''); setPrice(''); setBeds(''); }} className="underline">Clear all filters</button>
+              <button onClick={() => { setSearch(''); setType(''); setPrice(''); setBeds(''); }} className="underline hover:text-white transition">Clear all filters</button>
             </div>
           )}
         </div>
@@ -774,7 +904,10 @@ const PropertyDetail = ({ property, navigate, properties, onSubmitInquiry }) => 
         </div>
         <Navbar navigate={navigate} currentRoute="property" />
         <div className="relative z-10 flex-grow flex flex-col items-start justify-end px-6 md:px-12 pb-12 max-w-7xl mx-auto w-full">
-          <span className="bg-white text-black text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest mb-6 shadow-lg">{property.status}</span>
+          <div className="flex gap-3 mb-6">
+            <span className="bg-white text-black text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest shadow-lg">{property.status}</span>
+            {property.isExclusive && <span className="bg-black/80 backdrop-blur-md border border-yellow-500/50 text-yellow-500 text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest shadow-lg flex items-center gap-1"><Star size={12} className="fill-yellow-500" /> Exclusive</span>}
+          </div>
         </div>
       </header>
 
@@ -787,7 +920,7 @@ const PropertyDetail = ({ property, navigate, properties, onSubmitInquiry }) => 
               <p className="text-gray-400 text-lg mb-6 flex items-center gap-2">
                 <MapPin size={20} className="text-white" /> {property.address}
               </p>
-              <p className="text-4xl font-bold tracking-tight text-white">${property.price.toLocaleString()}</p>
+              <p className="text-4xl font-bold tracking-tight text-white">{property.currency || 'AED'} {property.price.toLocaleString()}</p>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 py-4">
@@ -823,7 +956,7 @@ const PropertyDetail = ({ property, navigate, properties, onSubmitInquiry }) => 
 
             <div>
               <h3 className="text-2xl font-bold mb-6">About this Property</h3>
-              <div className="text-gray-300 leading-relaxed space-y-4 text-[15px]">
+              <div className="text-gray-300 leading-relaxed space-y-4 text-[15px] whitespace-pre-wrap">
                 <p>{property.description || "Experience the pinnacle of luxury living in this architectural masterpiece. Designed with meticulous attention to detail, this incredible home offers sweeping panoramic views and ultimate privacy."}</p>
               </div>
             </div>
@@ -832,7 +965,7 @@ const PropertyDetail = ({ property, navigate, properties, onSubmitInquiry }) => 
               <h3 className="text-2xl font-bold mb-6">Features & Amenities</h3>
               <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-8 text-gray-300 text-sm">
                 {(property.features && property.features.length > 0 ? property.features : ['Infinity Pool', 'Smart Home System', 'Home Theater', 'Wine Cellar', "Chef's Kitchen", 'Panoramic Views']).map((feat, i) => (
-                  <li key={i} className="flex items-center gap-3"><CheckCircle size={18} className="text-white" /> {feat}</li>
+                  <li key={i} className="flex items-center gap-3"><CheckCircle size={18} className="text-white shrink-0" /> <span className="truncate">{feat}</span></li>
                 ))}
               </ul>
             </div>
@@ -901,7 +1034,15 @@ export default function App() {
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       ...inquiryData
     };
+    
+    // Add inquiry to dashboard
     setInquiries([newInquiry, ...inquiries]);
+    
+    // Increment the 'leads' counter for the specific property
+    setProperties(prevProperties => prevProperties.map(p => 
+      p.title === inquiryData.property ? { ...p, leads: (p.leads || 0) + 1 } : p
+    ));
+
     alert('Your inquiry has been sent successfully! Our agents will contact you soon.');
   };
 
@@ -910,7 +1051,7 @@ export default function App() {
       {currentRoute === 'home' && <Home navigate={navigate} properties={properties} />}
       {currentRoute === 'listings' && <Listings navigate={navigate} properties={properties} />}
       {currentRoute === 'property' && <PropertyDetail navigate={navigate} property={selectedProperty} properties={properties} onSubmitInquiry={handleInquirySubmit} />}
-      {currentRoute === 'admin' && <AdminDashboard navigate={navigate} properties={properties} setProperties={setProperties} inquiries={inquiries} />}
+      {currentRoute === 'admin' && <AdminDashboard navigate={navigate} properties={properties} setProperties={setProperties} inquiries={inquiries} setInquiries={setInquiries} />}
       {currentRoute !== 'admin' && <Footer navigate={navigate} onSubmitInquiry={handleInquirySubmit} />}
     </div>
   );
