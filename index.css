@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Utilities for Ali Ben Co. */
+body {
+    background-color: #0A0A0A;
+    color: #ffffff;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.heading-font {
+    font-family: 'Agrandir Wide', 'Montserrat', sans-serif;
+    letter-spacing: 0.05em;
+}
+
+.ghost-btn {
+    border: 1px solid #ffffff;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.ghost-btn:hover {
+    background: #ffffff;
+    color: #000000;
+}
+
+/* Hide Scrollbar for Slider but keep functionality */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
